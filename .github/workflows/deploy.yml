@@ -18,7 +18,7 @@ jobs:
         run: npx tsc --init
       - name: Install @cloudflare/workers-types
         run: npm install -D @cloudflare/workers-types
-      - name: npm ls
+      - name: npm ls aaa
         run: npm ls
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
