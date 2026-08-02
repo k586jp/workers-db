@@ -11,7 +11,7 @@ export type Article = {
     text: string,
     created_at: string,
     updated_at: string
-}
+};
 
 export class K586ArticleId extends WorkerEntrypoint<Env> {
 
