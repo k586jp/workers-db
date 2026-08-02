@@ -10,8 +10,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Install
+      - name: Install wrangler
         run: npm install wrangler
+      - name: Install @cloudflare/workers-types
+        run: npm install -D @cloudflare/workers-types
       - name: npm ls
         run: npm ls
       - name: Deploy
