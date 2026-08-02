@@ -12,10 +12,8 @@ jobs:
         uses: actions/checkout@v7
       - name: Install wrangler
         run: npm install wrangler
-      - name: npx wrangler types
-        run: npx wrangler types
-      - name: npx tsc --init
-        run: npx tsc --init
+      - name: npm ci
+        run: npm ci
       - name: Install @cloudflare/workers-types
         run: npm install -D @cloudflare/workers-types
       - name: npm ls
