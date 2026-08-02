@@ -34,3 +34,9 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
     }
 
 }
+
+export default {
+    async fetch() {
+        return new Response('RPC Service Only', { status: 400 });
+    }
+}
