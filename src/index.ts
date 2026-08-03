@@ -41,8 +41,8 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
 
 class Md2html {
 
-    articles: Article[];
-    env: Env;
+    private articles: Article[];
+    private readonly env: Env;
 
     constructor (articles: Article[], env: Env) {
         this.articles = articles;
