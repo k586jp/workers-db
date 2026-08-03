@@ -23,38 +23,67 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
 
     async getArticle(articleId: string) {
         const query =
-            'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at' +
-            'FROM article as t' +
+            'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
+            'FROM article as t ' +
             'WHERE id = ? AND is_public = ?';
         const stmt = this.env.DB.prepare(query);
         const rows = await stmt.bind(articleId, true).all();
         const articles: Article[] = JSON.parse(JSON.stringify(rows.results)) || null;
-        const count = articles.length;
 
-        for (let i = 0; i < count; i++) {
-            if (articles[i].content_html === null) {
-                const updQuery =
-                    'UPDATE article' +
-                    'SET content_html = ?' +
-                    'WHERE id = ?';
-                // const updStmt = this.env.DB.prepare(updQuery);
-                // articles[i].content_html = await this.env.MD2HTML.convert(articles[i].content_md);
-                // await updStmt.bind(articles[i].content_html, articles[i].id).run();
-            }
-        }
+        const md2html = new Md2html(articles, this.env);
+        await md2html.newConvert();
 
-        return articles;
+        return md2html.get();
     }
 
-    // async saveArticle(id: string, title: string, markdown: string): Promise<void> {
-        // 事前に markdown2html で HTML 化しておく
-        // const htmlContent = await this.env.MARKDOWN_SERVICE.convert(markdown)
+}
 
-        // const query = 'INSERT INTO posts (id, title, content_markdown, content_html) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET title = ?, content_markdown = ?, content_html = ?'
-        // const statement = this.env.DB.prepare(query)
 
-        // await statement.bind(id, title, markdown, htmlContent, title, markdown, htmlContent).run()
-    // }
+class Md2html {
+
+    articles: Article[];
+    env: Env;
+
+    constructor (articles: Article[], env: Env) {
+        this.articles = articles;
+        this.env = env;
+    }
+
+    get() {
+        return this.articles;
+    }
+
+    async newConvert() {
+        const count = this.articles.length;
+        for (let i = 0; i < count; i++) {
+            if (this.articles[i].content_html === null) {
+                const query =
+                    'UPDATE article ' +
+                    'SET content_html = ? ' +
+                    'WHERE id = ?';
+                // const stmt = this.env.DB.prepare(query);
+                // this.articles[i].content_html = await this.env.MD2HTML.convert(this.articles[i].content_md);
+                // await stmt.bind(this.articles[i].content_html, this.articles[i].id).run();
+            }
+        }
+    }
+
+    async saveArticle() {
+        const count = this.articles.length;
+        if (count === 1) {
+            const query =
+                'INSERT INTO article (id, title, content_md, content_html, user_id)' +
+                'VALUES (?, ?, ?, ?, ?)' +
+                'ON CONFLICT(id) DO' +
+                'UPDATE SET title = ?, content_md = ?, content_html = ?, updated_at = (DATETIME(\'now\'))';
+            // const stmt = this.env.DB.prepare(query);
+            // this.articles[1].content_html = await this.env.MD2HTML.convert(this.articles[1].content_md);
+            // await stmt.bind(
+            //    this.articles[1].id, this.articles[1].title, this.articles[1].content_md, this.articles[1].content_html, this.articles[1].user_id,
+            //    this.articles[1].title, this.articles[1].content_md, this.articles[1].content_html
+            // ).run();
+        }
+    }
 
 }
 
