@@ -1,7 +1,9 @@
 import { WorkerEntrypoint } from 'cloudflare:workers'
+// import { md2html } from '../../workers-markdown2html/src/index'
 
 type Env = {
     DB: D1Database,
+//    MD2HTML: Service<md2html>,
     SAKURA_BEARER_TOKEN: string
 };
 
@@ -20,22 +22,26 @@ export type Article = {
 export class K586ArticleId extends WorkerEntrypoint<Env> {
 
     async getArticle(articleId: string) {
-        const query = 'SELECT id, title, content_md, content_html, user_id, created_at, updated_at FROM article WHERE id = ?';
-        const statement = this.env.DB.prepare(query);
-        const rows = await statement.bind(articleId).all();
+        const query =
+            'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at' +
+            'FROM article as t' +
+            'WHERE id = ? AND is_public = ?';
+        const stmt = this.env.DB.prepare(query);
+        const rows = await stmt.bind(articleId, true).all();
         const articles: Article[] = JSON.parse(JSON.stringify(rows.results)) || null;
+        const count = articles.length;
 
-        // if (post.content_html === null) {
-            // markdown2html Worker を呼んで HTML に変換する
-            // const generatedHtml = await this.env.MARKDOWN_SERVICE.convert(post.content_markdown)
-
-            // 変換した HTML を D1 に保存（UPDATE）する
-            // const updateStatement = this.env.DB.prepare('UPDATE posts SET content_html = ? WHERE id = ?')
-            // await updateStatement.bind(generatedHtml, id).run()
-
-            // 呼び出し元に返すオブジェクトの content_html を更新する
-            // post.content_html = generatedHtml
-        // }
+        for (let i = 0; i < count; i++) {
+            if (articles[i].content_html === null) {
+                const updQuery =
+                    'UPDATE article' +
+                    'SET content_html = ?' +
+                    'WHERE id = ?';
+                // const updStmt = this.env.DB.prepare(updQuery);
+                // articles[i].content_html = await this.env.MD2HTML.convert(articles[i].content_md);
+                // await updStmt.bind(articles[i].content_html, articles[i].id).run();
+            }
+        }
 
         return articles;
     }
