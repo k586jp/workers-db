@@ -19,11 +19,11 @@ export type Article = {
 
 export class K586ArticleId extends WorkerEntrypoint<Env> {
 
-    async getArticle(articleId: string): Promise<Article[] | null> {
+    async getArticle(articleId: string) {
         const query = 'SELECT id, title, content_md, content_html, user_id, created_at, updated_at FROM article WHERE id = ?';
         const statement = this.env.DB.prepare(query);
         const rows = await statement.bind(articleId).all();
-        const articles: Article[] = JSON.parse(rows.results.toString()) || null;
+        const articles: Article[] = JSON.parse(JSON.stringify(rows.results)) || null;
 
         // if (post.content_html === null) {
             // markdown2html Worker を呼んで HTML に変換する
