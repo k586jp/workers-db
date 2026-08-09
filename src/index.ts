@@ -30,8 +30,8 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         const rows = await stmt.bind(articleId, true).all<Article>();
         const articles: Article[] = rows.results || null;
 
-        const md2html = new Md2html(articles, this.env);
-        await md2html.newConvert();
+        const md2html = new Md2html(articles);
+        await md2html.newConvert(this.env);
 
         return md2html.get();
     }
@@ -50,18 +50,16 @@ function sleep(seconds: number): Promise<void> {
 class Md2html {
 
     private readonly articles: Article[];
-    private readonly env: Env;
 
-    constructor (articles: Article[], env: Env) {
+    constructor (articles: Article[]) {
         this.articles = articles;
-        this.env = env;
     }
 
     get() {
         return this.articles;
     }
 
-    async newConvert() {
+    async newConvert(env: Env): Promise<void> {
         const count = this.articles.length;
         let convertNumber: number[] = [];
         let convertPromises: Promise<string>[] = [];
@@ -69,10 +67,10 @@ class Md2html {
             if (this.articles[i].content_html === null) {
                 convertNumber.push(i);
                 // convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
-                await this.env.MD2HTML.convert(this.articles[i].content_md);
+                await env.MD2HTML.convert(this.articles[i].content_md);
             }
         }
-        // const convert = await Promise.all(convertPromises);
+        const convert = await Promise.all(convertPromises);
         // const convertCount = convertNumber.length;
         // let stmt: D1PreparedStatement[] = [];
         // for (let j = 0; j < convertCount; j++) {
@@ -87,7 +85,7 @@ class Md2html {
         // await this.env.DB.batch(stmt);
     }
 
-    async saveArticle() {
+    async saveArticle(env: Env) {
         const count = this.articles.length;
         if (count === 1) {
             const query =
@@ -95,8 +93,8 @@ class Md2html {
                 'VALUES (?, ?, ?, ?, ?)' +
                 'ON CONFLICT(id) DO' +
                 'UPDATE SET title = ?, content_md = ?, content_html = ?, updated_at = (DATETIME(\'now\'))';
-            const stmt = this.env.DB.prepare(query);
-            this.articles[0].content_html = await this.env.MD2HTML.convert(this.articles[0].content_md);
+            const stmt = env.DB.prepare(query);
+            this.articles[0].content_html = await env.MD2HTML.convert(this.articles[0].content_md);
             let retry = 0;
             let result: D1Result<Record<string, unknown>> = null;
             while (result === null || !result.success) {
