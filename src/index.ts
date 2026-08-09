@@ -22,6 +22,7 @@ export type Article = {
 export class K586ArticleId extends WorkerEntrypoint<Env> {
 
     async getArticle(articleId: string) {
+        // 取得
         const query =
             'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
             'FROM article as t ' +
@@ -30,10 +31,30 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         const rows = await stmt.bind(articleId, true).all<Article>();
         const articles: Article[] = rows.results || null;
 
-        const md2html = new Md2html(articles);
-        await md2html.newConvert(this.env);
-
-        return md2html.get();
+        // Markdown を HTML に変換
+        const count = articles.length;
+        let convertNumber: number[] = [];
+        let convertPromises: Promise<string>[] = [];
+        for (let i = 0; i < count; i++) {
+            if (articles[i].content_html === null) {
+                convertNumber.push(i);
+                convertPromises.push(this.env.MD2HTML.convert(articles[i].content_md));
+            }
+        }
+        const convert = await Promise.all(convertPromises);
+        const convertCount = convertNumber.length;
+        let stmtArray: D1PreparedStatement[] = [];
+        for (let j = 0; j < convertCount; j++) {
+            const i = convertNumber[j];
+            articles[i].content_html = convert[j];
+            const query =
+                'UPDATE article ' +
+                'SET content_html = ? ' +
+                'WHERE id = ?';
+            stmtArray.push(this.env.DB.prepare(query).bind(articles[i].content_html, articles[i].id));
+        }
+        await this.env.DB.batch(stmtArray);
+        return articles;
     }
 
 }
@@ -47,71 +68,71 @@ function sleep(seconds: number): Promise<void> {
     );
 }
 
-class Md2html {
-
-    private readonly articles: Article[];
-
-    constructor (articles: Article[]) {
-        this.articles = articles;
-    }
-
-    get() {
-        return this.articles;
-    }
-
-    async newConvert(env: Env): Promise<void> {
-        const count = this.articles.length;
-        let convertNumber: number[] = [];
-        let convertPromises: Promise<string>[] = [];
-        for (let i = 0; i < count; i++) {
-            if (this.articles[i].content_html === null) {
-                convertNumber.push(i);
-                // convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
-                await env.MD2HTML.convert(this.articles[i].content_md);
-            }
-        }
-        const convert = await Promise.all(convertPromises);
-        // const convertCount = convertNumber.length;
-        // let stmt: D1PreparedStatement[] = [];
-        // for (let j = 0; j < convertCount; j++) {
-        //     const i = convertNumber[j];
-        //     this.articles[i].content_html = convert[j];
-        //     const query =
-        //         'UPDATE article ' +
-        //         'SET content_html = ? ' +
-        //         'WHERE id = ?';
-        //     stmt.push(this.env.DB.prepare(query).bind(this.articles[i].content_html, this.articles[i].id));
-        // }
-        // await this.env.DB.batch(stmt);
-    }
-
-    async saveArticle(env: Env) {
-        const count = this.articles.length;
-        if (count === 1) {
-            const query =
-                'INSERT INTO article (id, title, content_md, content_html, user_id)' +
-                'VALUES (?, ?, ?, ?, ?)' +
-                'ON CONFLICT(id) DO' +
-                'UPDATE SET title = ?, content_md = ?, content_html = ?, updated_at = (DATETIME(\'now\'))';
-            const stmt = env.DB.prepare(query);
-            this.articles[0].content_html = await env.MD2HTML.convert(this.articles[0].content_md);
-            let retry = 0;
-            let result: D1Result<Record<string, unknown>> = null;
-            while (result === null || !result.success) {
-                if (retry > 5) {
-                    throw new Error('記事の保存に失敗しました。');
-                }
-                await sleep(5 * retry);
-                result = await stmt.bind(
-                    this.articles[0].id, this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html, this.articles[0].user_id,
-                    this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html
-                ).run();
-                retry++;
-            }
-        }
-    }
-
-}
+// class Md2html {
+//
+//     private readonly articles: Article[];
+//
+//     constructor (articles: Article[]) {
+//         this.articles = articles;
+//     }
+//
+//     get() {
+//         return this.articles;
+//     }
+//
+//     async newConvert(env: Env): Promise<void> {
+//         const count = this.articles.length;
+//         let convertNumber: number[] = [];
+//         let convertPromises: Promise<string>[] = [];
+//         for (let i = 0; i < count; i++) {
+//             if (this.articles[i].content_html === null) {
+//                 convertNumber.push(i);
+//                 // convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
+//                 await env.MD2HTML.convert(this.articles[i].content_md);
+//             }
+//         }
+//         // const convert = await Promise.all(convertPromises);
+//         // const convertCount = convertNumber.length;
+//         // let stmt: D1PreparedStatement[] = [];
+//         // for (let j = 0; j < convertCount; j++) {
+//         //     const i = convertNumber[j];
+//         //     this.articles[i].content_html = convert[j];
+//         //     const query =
+//         //         'UPDATE article ' +
+//         //         'SET content_html = ? ' +
+//         //         'WHERE id = ?';
+//         //     stmt.push(this.env.DB.prepare(query).bind(this.articles[i].content_html, this.articles[i].id));
+//         // }
+//         // await this.env.DB.batch(stmt);
+//     }
+//
+//     async saveArticle(env: Env) {
+//         const count = this.articles.length;
+//         if (count === 1) {
+//             const query =
+//                 'INSERT INTO article (id, title, content_md, content_html, user_id)' +
+//                 'VALUES (?, ?, ?, ?, ?)' +
+//                 'ON CONFLICT(id) DO' +
+//                 'UPDATE SET title = ?, content_md = ?, content_html = ?, updated_at = (DATETIME(\'now\'))';
+//             const stmt = env.DB.prepare(query);
+//             this.articles[0].content_html = await env.MD2HTML.convert(this.articles[0].content_md);
+//             let retry = 0;
+//             let result: D1Result<Record<string, unknown>> = null;
+//             while (result === null || !result.success) {
+//                 if (retry > 5) {
+//                     throw new Error('記事の保存に失敗しました。');
+//                 }
+//                 await sleep(5 * retry);
+//                 result = await stmt.bind(
+//                     this.articles[0].id, this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html, this.articles[0].user_id,
+//                     this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html
+//                 ).run();
+//                 retry++;
+//             }
+//         }
+//     }
+//
+// }
 
 
 // export class K586ArticleId extends WorkerEntrypoint<Env> {
