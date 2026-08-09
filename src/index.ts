@@ -25,7 +25,7 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         // 取得
         let rows: D1Result<Article>;
         const limit = 30;
-        if (typeof articleId === 'string') {
+        if (articleId) {
             const query =
                 'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
                 'FROM article as t ' +
@@ -39,8 +39,9 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
                 'WHERE t.is_public = ? ' +
                 'ORDER BY t.created_at DESC ' +
                 'LIMIT ? OFFSET ?';
+            const p = page || 0;
             const stmt = this.env.DB.prepare(query);
-            rows = await stmt.bind(true, limit, (0 * limit)).all<Article>();
+            rows = await stmt.bind(true, limit, (p * limit)).all<Article>();
         }
         const articles: Article[] = rows.results || null;
 
