@@ -1,5 +1,5 @@
-import { WorkerEntrypoint } from 'cloudflare:workers'
- import { Md2HtmlService } from '../../workers-markdown2html/src/index'
+import { WorkerEntrypoint } from 'cloudflare:workers';
+import { Md2HtmlService } from '../../workers-markdown2html/src/index';
 
 type Env = {
     DB: D1Database,
@@ -27,8 +27,8 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
             'FROM article as t ' +
             'WHERE id = ? AND is_public = ?';
         const stmt = this.env.DB.prepare(query);
-        const rows = await stmt.bind(articleId, true).all();
-        const articles: Article[] = JSON.parse(JSON.stringify(rows.results)) || null;
+        const rows = await stmt.bind(articleId, true).all<Article>();
+        const articles: Article[] = rows.results || null;
 
         const md2html = new Md2html(articles, this.env);
         await md2html.newConvert();
@@ -38,6 +38,12 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
 
 }
 
+
+function sleep(seconds: number): Promise<void> {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, seconds * 1000);
+    });
+}
 
 class Md2html {
 
@@ -55,19 +61,27 @@ class Md2html {
 
     async newConvert() {
         const count = this.articles.length;
-        let run: Promise<D1Result<Record<string, unknown>>>[];
+        let convertNumber: number[] = [];
+        let convertPromises: Promise<string>[] = [];
         for (let i = 0; i < count; i++) {
             if (this.articles[i].content_html === null) {
-                const query =
-                    'UPDATE article ' +
-                    'SET content_html = ? ' +
-                    'WHERE id = ?';
-                const stmt = this.env.DB.prepare(query);
-                this.articles[i].content_html = await this.env.MD2HTML.convert(this.articles[i].content_md);
-                run.push(stmt.bind(this.articles[i].content_html, this.articles[i].id).run());
+                convertNumber.push(i);
+                convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
             }
         }
-        await Promise.all(run);
+        const convert = await Promise.all(convertPromises);
+        const convertCount = convertNumber.length;
+        let stmt: D1PreparedStatement[] = [];
+        for (let j = 0; j < convertCount; j++) {
+            const i = convertNumber[j];
+            this.articles[i].content_html = convert[j];
+            const query =
+                'UPDATE article ' +
+                'SET content_html = ? ' +
+                'WHERE id = ?';
+            stmt.push(this.env.DB.prepare(query).bind(this.articles[i].content_html, this.articles[i].id));
+        }
+        await this.env.DB.batch(stmt);
     }
 
     async saveArticle() {
@@ -80,11 +94,17 @@ class Md2html {
                 'UPDATE SET title = ?, content_md = ?, content_html = ?, updated_at = (DATETIME(\'now\'))';
             const stmt = this.env.DB.prepare(query);
             this.articles[0].content_html = await this.env.MD2HTML.convert(this.articles[0].content_md);
-            let result: D1Result<Record<string, unknown>>;
-            result = await stmt.bind(
-               this.articles[0].id, this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html, this.articles[0].user_id,
-               this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html
-            ).run();
+            let retry = 0;
+            let result: D1Result<Record<string, unknown>> = null;
+            while (result === null || !result.success) {
+                if (retry > 5) { break; }
+                await sleep(5 * retry);
+                result = await stmt.bind(
+                    this.articles[0].id, this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html, this.articles[0].user_id,
+                    this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html
+                ).run();
+                retry++;
+            }
         }
     }
 
