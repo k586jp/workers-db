@@ -1,6 +1,8 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { Md2HtmlService } from '../../workers-markdown2html/src/index';
 
+const ARTICLES_LIMIT = 30;
+
 type Env = {
     DB: D1Database,
     MD2HTML: Service<Md2HtmlService>,
@@ -24,7 +26,6 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
     async getArticle(articleId?: string, page?: number) {
         // 取得
         let rows: D1Result<Article>;
-        const limit = 30;
         if (articleId) {
             const query =
                 'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
@@ -41,7 +42,7 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
                 'LIMIT ? OFFSET ?';
             const p = page || 0;
             const stmt = this.env.DB.prepare(query);
-            rows = await stmt.bind(true, limit, (p * limit)).all<Article>();
+            rows = await stmt.bind(true, ARTICLES_LIMIT, (p * ARTICLES_LIMIT)).all<Article>();
         }
         const articles: Article[] = rows.results || null;
 
@@ -70,6 +71,21 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         // if (stmtArray.length > 0) {
         //     await this.env.DB.batch(stmtArray);
         // }
+        return articles;
+    }
+
+    async getArticlesTitle () {
+        let rows: D1Result<Article>;
+        const query =
+            'SELECT t.id, t.title, t.user_id, t.created_at ' +
+            'FROM article as t ' +
+            'WHERE t.is_public = ? ' +
+            'ORDER BY t.created_at DESC ' +
+            'LIMIT ?';
+        const stmt = this.env.DB.prepare(query);
+        rows = await stmt.bind(true, ARTICLES_LIMIT).all<Article>();
+        const articles: Article[] = rows.results || null;
+
         return articles;
     }
 
