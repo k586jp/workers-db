@@ -21,14 +21,27 @@ export type Article = {
 
 export class K586ArticleId extends WorkerEntrypoint<Env> {
 
-    async getArticle(articleId: string) {
+    async getArticle(articleId?: string, page?: number) {
         // 取得
-        const query =
-            'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
-            'FROM article as t ' +
-            'WHERE id = ? AND is_public = ?';
-        const stmt = this.env.DB.prepare(query);
-        const rows = await stmt.bind(articleId, true).all<Article>();
+        let rows: D1Result<Article>;
+        const limit = 30;
+        if (articleId) {
+            const query =
+                'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
+                'FROM article as t ' +
+                'WHERE id = ? AND is_public = ?';
+            const stmt = this.env.DB.prepare(query);
+            rows = await stmt.bind(articleId, true).all<Article>();
+        } else {
+            const query =
+                'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
+                'FROM article as t ' +
+                'WHERE is_public = ?' +
+                'ORDER BY t.created_at DESC' +
+                'LIMIT ' + <number>limit + ' OFFSET ' + <number>(page * limit);
+            const stmt = this.env.DB.prepare(query);
+            rows = await stmt.bind(true).all<Article>();
+        }
         const articles: Article[] = rows.results || null;
 
         // Markdown を HTML に変換
@@ -80,32 +93,6 @@ function sleep(seconds: number): Promise<void> {
 //
 //     get() {
 //         return this.articles;
-//     }
-//
-//     async newConvert(env: Env): Promise<void> {
-//         const count = this.articles.length;
-//         let convertNumber: number[] = [];
-//         let convertPromises: Promise<string>[] = [];
-//         for (let i = 0; i < count; i++) {
-//             if (this.articles[i].content_html === null) {
-//                 convertNumber.push(i);
-//                 // convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
-//                 await env.MD2HTML.convert(this.articles[i].content_md);
-//             }
-//         }
-//         // const convert = await Promise.all(convertPromises);
-//         // const convertCount = convertNumber.length;
-//         // let stmt: D1PreparedStatement[] = [];
-//         // for (let j = 0; j < convertCount; j++) {
-//         //     const i = convertNumber[j];
-//         //     this.articles[i].content_html = convert[j];
-//         //     const query =
-//         //         'UPDATE article ' +
-//         //         'SET content_html = ? ' +
-//         //         'WHERE id = ?';
-//         //     stmt.push(this.env.DB.prepare(query).bind(this.articles[i].content_html, this.articles[i].id));
-//         // }
-//         // await this.env.DB.batch(stmt);
 //     }
 //
 //     async saveArticle(env: Env) {
