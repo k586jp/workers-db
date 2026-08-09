@@ -68,10 +68,10 @@ class Md2html {
         for (let i = 0; i < count; i++) {
             if (this.articles[i].content_html === null) {
                 convertNumber.push(i);
-                // convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
+                convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
             }
         }
-        // const convert = await Promise.all(convertPromises);
+        const convert = await Promise.all(convertPromises);
         // const convertCount = convertNumber.length;
         // let stmt: D1PreparedStatement[] = [];
         // for (let j = 0; j < convertCount; j++) {
