@@ -23,7 +23,7 @@ export type Article = {
 
 export class K586ArticleId extends WorkerEntrypoint<Env> {
 
-    async getArticle(articleId?: string, page?: number) {
+    async getArticles(articleId?: string, page?: number) {
         // 取得
         let rows: D1Result<Article>;
         if (articleId) {
