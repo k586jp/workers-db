@@ -25,7 +25,7 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         // 取得
         let rows: D1Result<Article>;
         const limit = 30;
-        if (typeof articleId) {
+        if (typeof articleId === 'string') {
             const query =
                 'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
                 'FROM article as t ' +
