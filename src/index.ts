@@ -38,9 +38,9 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
                 'FROM article as t ' +
                 'WHERE t.is_public = ?' +
                 'ORDER BY t.created_at DESC' +
-                'LIMIT ? OFFSET ?';
+                'LIMIT 30 OFFSET 0';
             const stmt = this.env.DB.prepare(query);
-            rows = await stmt.bind(true, limit, (page * limit)).all<Article>();
+            rows = await stmt.bind(true).all<Article>();
         }
         const articles: Article[] = rows.results || null;
 
