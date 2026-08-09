@@ -38,10 +38,11 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         for (let i = 0; i < count; i++) {
             if (articles[i].content_html === null) {
                 convertNumber.push(i);
-                convertPromises.push(this.env.MD2HTML.convert(articles[i].content_md));
+                // convertPromises.push(this.env.MD2HTML.convert(articles[i].content_md));
+                await this.env.MD2HTML.convert(articles[i].content_md);
             }
         }
-        const convert = await Promise.all(convertPromises);
+        // const convert = await Promise.all(convertPromises);
         // const convertCount = convertNumber.length;
         // let stmtArray: D1PreparedStatement[] = [];
         // for (let j = 0; j < convertCount; j++) {
