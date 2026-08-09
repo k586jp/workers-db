@@ -40,9 +40,11 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
 
 
 function sleep(seconds: number): Promise<void> {
-    return new Promise(function (resolve) {
-        setTimeout(resolve, seconds * 1000);
-    });
+    return new Promise(
+        function (resolve) {
+            setTimeout(resolve, seconds * 1000);
+        }
+    );
 }
 
 class Md2html {
@@ -97,7 +99,9 @@ class Md2html {
             let retry = 0;
             let result: D1Result<Record<string, unknown>> = null;
             while (result === null || !result.success) {
-                if (retry > 5) { break; }
+                if (retry > 5) {
+                    throw new Error('記事の保存に失敗しました。');
+                }
                 await sleep(5 * retry);
                 result = await stmt.bind(
                     this.articles[0].id, this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html, this.articles[0].user_id,
