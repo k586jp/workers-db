@@ -40,7 +40,7 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
                 'ORDER BY t.created_at DESC ' +
                 'LIMIT ? OFFSET ?';
             const stmt = this.env.DB.prepare(query);
-            rows = await stmt.bind(true, limit, (page * limit)).all<Article>();
+            rows = await stmt.bind(true, limit, (0 * limit)).all<Article>();
         }
         const articles: Article[] = rows.results || null;
 
