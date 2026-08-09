@@ -31,7 +31,7 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         const articles: Article[] = rows.results || null;
 
         const md2html = new Md2html(articles, this.env);
-        // await md2html.newConvert();
+        await md2html.newConvert();
 
         return md2html.get();
     }
@@ -68,22 +68,22 @@ class Md2html {
         for (let i = 0; i < count; i++) {
             if (this.articles[i].content_html === null) {
                 convertNumber.push(i);
-                convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
+                // convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
             }
         }
-        const convert = await Promise.all(convertPromises);
-        const convertCount = convertNumber.length;
-        let stmt: D1PreparedStatement[] = [];
-        for (let j = 0; j < convertCount; j++) {
-            const i = convertNumber[j];
-            this.articles[i].content_html = convert[j];
-            const query =
-                'UPDATE article ' +
-                'SET content_html = ? ' +
-                'WHERE id = ?';
-            stmt.push(this.env.DB.prepare(query).bind(this.articles[i].content_html, this.articles[i].id));
-        }
-        await this.env.DB.batch(stmt);
+        // const convert = await Promise.all(convertPromises);
+        // const convertCount = convertNumber.length;
+        // let stmt: D1PreparedStatement[] = [];
+        // for (let j = 0; j < convertCount; j++) {
+        //     const i = convertNumber[j];
+        //     this.articles[i].content_html = convert[j];
+        //     const query =
+        //         'UPDATE article ' +
+        //         'SET content_html = ? ' +
+        //         'WHERE id = ?';
+        //     stmt.push(this.env.DB.prepare(query).bind(this.articles[i].content_html, this.articles[i].id));
+        // }
+        // await this.env.DB.batch(stmt);
     }
 
     async saveArticle() {
