@@ -12,7 +12,7 @@
   ],
   "services": [
     {
-      "binding": "md2html",
+      "binding": "MD2HTML",
       "service": "workers-markdown2html",
       "entrypoint": "Md2HtmlService"
     }
