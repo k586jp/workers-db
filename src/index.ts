@@ -21,7 +21,7 @@ export type Article = {
 };
 
 
-export class K586ArticleId extends WorkerEntrypoint<Env> {
+export class K586Articles extends WorkerEntrypoint<Env> {
 
     async getArticles(articleId?: string, page?: number) {
         // 取得
