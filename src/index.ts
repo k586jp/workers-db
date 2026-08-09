@@ -38,22 +38,21 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         for (let i = 0; i < count; i++) {
             if (articles[i].content_html === null) {
                 convertNumber.push(i);
-                // convertPromises.push(this.env.MD2HTML.convert(articles[i].content_md));
-                await this.env.MD2HTML.convert(articles[i].content_md);
+                convertPromises.push(this.env.MD2HTML.convert(articles[i].content_md));
             }
         }
-        // const convert = await Promise.all(convertPromises);
-        // const convertCount = convertNumber.length;
+        const convert = await Promise.all(convertPromises);
+        const convertCount = convertNumber.length;
         // let stmtArray: D1PreparedStatement[] = [];
-        // for (let j = 0; j < convertCount; j++) {
-        //     const i = convertNumber[j];
-        //     articles[i].content_html = convert[j];
-        //     const query =
-        //         'UPDATE article ' +
-        //         'SET content_html = ? ' +
-        //         'WHERE id = ?';
-        //     stmtArray.push(this.env.DB.prepare(query).bind(articles[i].content_html, articles[i].id));
-        // }
+        for (let j = 0; j < convertCount; j++) {
+            const i = convertNumber[j];
+            articles[i].content_html = convert[j];
+            const query =
+                'UPDATE article ' +
+                'SET content_html = ? ' +
+                'WHERE id = ?';
+            // stmtArray.push(this.env.DB.prepare(query).bind(articles[i].content_html, articles[i].id));
+        }
         // if (stmtArray.length > 0) {
         //     await this.env.DB.batch(stmtArray);
         // }
