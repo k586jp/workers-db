@@ -32,15 +32,15 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
         const articles: Article[] = rows.results || null;
 
         // Markdown を HTML に変換
-        // const count = articles.length;
-        // let convertNumber: number[] = [];
-        // let convertPromises: Promise<string>[] = [];
-        // for (let i = 0; i < count; i++) {
-        //     if (articles[i].content_html === null) {
-        //         convertNumber.push(i);
-        //         // convertPromises.push(this.env.MD2HTML.convert(articles[i].content_md));
-        //     }
-        // }
+        const count = articles.length;
+        let convertNumber: number[] = [];
+        let convertPromises: Promise<string>[] = [];
+        for (let i = 0; i < count; i++) {
+            if (articles[i].content_html === null) {
+                convertNumber.push(i);
+                convertPromises.push(this.env.MD2HTML.convert(articles[i].content_md));
+            }
+        }
         // const convert = await Promise.all(convertPromises);
         // const convertCount = convertNumber.length;
         // let stmtArray: D1PreparedStatement[] = [];
