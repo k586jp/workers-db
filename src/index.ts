@@ -1,9 +1,9 @@
 import { WorkerEntrypoint } from 'cloudflare:workers'
-// import { md2html } from '../../workers-markdown2html/src/index'
+ import { Md2HtmlService } from '../../workers-markdown2html/src/index'
 
 type Env = {
     DB: D1Database,
-//    MD2HTML: Service<md2html>,
+    MD2HTML: Service<Md2HtmlService>,
     SAKURA_BEARER_TOKEN: string
 };
 
@@ -41,7 +41,7 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
 
 class Md2html {
 
-    private articles: Article[];
+    private readonly articles: Article[];
     private readonly env: Env;
 
     constructor (articles: Article[], env: Env) {
@@ -55,17 +55,19 @@ class Md2html {
 
     async newConvert() {
         const count = this.articles.length;
+        let run: Promise<D1Result<Record<string, unknown>>>[];
         for (let i = 0; i < count; i++) {
             if (this.articles[i].content_html === null) {
                 const query =
                     'UPDATE article ' +
                     'SET content_html = ? ' +
                     'WHERE id = ?';
-                // const stmt = this.env.DB.prepare(query);
-                // this.articles[i].content_html = await this.env.MD2HTML.convert(this.articles[i].content_md);
-                // await stmt.bind(this.articles[i].content_html, this.articles[i].id).run();
+                const stmt = this.env.DB.prepare(query);
+                this.articles[i].content_html = await this.env.MD2HTML.convert(this.articles[i].content_md);
+                run.push(stmt.bind(this.articles[i].content_html, this.articles[i].id).run());
             }
         }
+        await Promise.all(run);
     }
 
     async saveArticle() {
@@ -76,12 +78,13 @@ class Md2html {
                 'VALUES (?, ?, ?, ?, ?)' +
                 'ON CONFLICT(id) DO' +
                 'UPDATE SET title = ?, content_md = ?, content_html = ?, updated_at = (DATETIME(\'now\'))';
-            // const stmt = this.env.DB.prepare(query);
-            // this.articles[1].content_html = await this.env.MD2HTML.convert(this.articles[1].content_md);
-            // await stmt.bind(
-            //    this.articles[1].id, this.articles[1].title, this.articles[1].content_md, this.articles[1].content_html, this.articles[1].user_id,
-            //    this.articles[1].title, this.articles[1].content_md, this.articles[1].content_html
-            // ).run();
+            const stmt = this.env.DB.prepare(query);
+            this.articles[0].content_html = await this.env.MD2HTML.convert(this.articles[0].content_md);
+            let result: D1Result<Record<string, unknown>>;
+            result = await stmt.bind(
+               this.articles[0].id, this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html, this.articles[0].user_id,
+               this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html
+            ).run();
         }
     }
 

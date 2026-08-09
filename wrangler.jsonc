@@ -9,5 +9,12 @@
       "database_name": "db_k586jp",
       "database_id": "173c36c0-690d-42ca-bfa8-7c171b5a5b0e"
     }
+  ],
+  "services": [
+    {
+      "binding": "md2html",
+      "service": "workers-markdown2html",
+      "entrypoint": "Md2HtmlService"
+    }
   ]
 }
