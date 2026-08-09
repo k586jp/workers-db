@@ -42,8 +42,8 @@ export class K586ArticleId extends WorkerEntrypoint<Env> {
             }
         }
         const convert = await Promise.all(convertPromises);
-        const convertCount = convertNumber.length;
-        let stmtArray: D1PreparedStatement[] = [];
+        // const convertCount = convertNumber.length;
+        // let stmtArray: D1PreparedStatement[] = [];
         // for (let j = 0; j < convertCount; j++) {
         //     const i = convertNumber[j];
         //     articles[i].content_html = convert[j];
