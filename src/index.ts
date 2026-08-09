@@ -69,6 +69,7 @@ class Md2html {
             if (this.articles[i].content_html === null) {
                 convertNumber.push(i);
                 // convertPromises.push(this.env.MD2HTML.convert(this.articles[i].content_md));
+                await this.env.MD2HTML.convert(this.articles[i].content_md);
             }
         }
         // const convert = await Promise.all(convertPromises);
