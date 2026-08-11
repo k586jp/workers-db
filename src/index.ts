@@ -1,5 +1,5 @@
-import { WorkerEntrypoint } from 'cloudflare:workers';
-import { Md2HtmlService } from '../../workers-markdown2html/src/index';
+import {WorkerEntrypoint} from 'cloudflare:workers';
+import {Md2HtmlService} from '../../workers-markdown2html/src/index';
 
 const ARTICLES_LIMIT = 30;
 
@@ -75,7 +75,6 @@ export class K586Articles extends WorkerEntrypoint<Env> {
     }
 
     async getArticlesTitle () {
-        let rows: D1Result<Article>;
         const query =
             'SELECT t.id, t.title, t.user_id, t.created_at ' +
             'FROM article as t ' +
@@ -83,12 +82,45 @@ export class K586Articles extends WorkerEntrypoint<Env> {
             'ORDER BY t.created_at DESC ' +
             'LIMIT ?';
         const stmt = this.env.DB.prepare(query);
-        rows = await stmt.bind(true, ARTICLES_LIMIT).all<Article>();
+        const rows = await stmt.bind(true, ARTICLES_LIMIT).all<Article>();
         const articles: Article[] = rows.results || null;
 
         return articles;
     }
 
+    async getArticleEditMode (articleId: string) {
+        const query =
+            'SELECT t.id, t.title, t.content_md, t.user_id, t.created_at ' +
+            'FROM article as t ' +
+            'WHERE t.id = ?'; // 今のところ個人用なので is_public は見ない
+        const stmt = this.env.DB.prepare(query);
+        return await stmt.bind(articleId).first<Article>() || null;
+    }
+
+    async updateArticle (article: Article) {
+        const query =
+            'UPDATE article ' +
+            'SET title = ?, content_md = ? ' +
+            'WHERE id = ?';
+        const stmt = this.env.DB.prepare(query);
+        let retry = 0;
+        let result: D1Result<Record<string, unknown>> = null;
+        while (result === null || !result.success) {
+            if (retry > 5) {
+                throw new Error('記事の保存に失敗しました。');
+            }
+            await sleep(5 * retry);
+            result = await stmt.bind(article.title, article.content_md, article.id).run();
+            retry++;
+        }
+    }
+
+}
+
+export default {
+    async fetch() {
+        return new Response('RPC Service Only', { status: 400 });
+    }
 }
 
 
@@ -162,10 +194,3 @@ function sleep(seconds: number): Promise<void> {
 //     }
 //
 // }
-
-
-export default {
-    async fetch() {
-        return new Response('RPC Service Only', { status: 400 });
-    }
-}
