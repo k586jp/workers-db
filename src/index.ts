@@ -76,7 +76,7 @@ export class K586Articles extends WorkerEntrypoint<Env> {
 
     async getArticlesTitle () {
         const query =
-            'SELECT t.id, t.title, t.user_id, date(datetime(t.created_at)) AS created_at' +
+            'SELECT t.id, t.title, t.user_id, date(datetime(t.created_at)) as created_at ' +
             'FROM article as t ' +
             'WHERE t.is_public = ? ' +
             'ORDER BY t.created_at DESC ' +
