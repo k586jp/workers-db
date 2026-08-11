@@ -11,13 +11,13 @@ type Env = {
 
 export type Article = {
     id: string,
-    is_public: boolean,
+    is_public?: boolean,
     title: string,
     content_md: string,
-    content_html: string | null,
+    content_html?: string | null,
     user_id: string,
-    created_at: string,
-    updated_at: string
+    created_at?: string,
+    updated_at?: string
 };
 
 
