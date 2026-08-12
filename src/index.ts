@@ -28,14 +28,14 @@ export class K586Articles extends WorkerEntrypoint<Env> {
         let rows: D1Result<Article>;
         if (articleId) {
             const query =
-                'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
+                'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, strftime(\'%Y-%m-%dT%H:%M\', t.created_at) as created_at, strftime(\'%Y-%m-%dT%H:%M\', t.updated_at) as updated_at ' +
                 'FROM article as t ' +
                 'WHERE t.id = ? AND t.is_public = ?';
             const stmt = this.env.DB.prepare(query);
             rows = await stmt.bind(articleId, true).all<Article>();
         } else {
             const query =
-                'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, t.created_at, t.updated_at ' +
+                'SELECT t.id, t.title, t.content_md, t.content_html, t.user_id, strftime(\'%Y-%m-%dT%H:%M\', t.created_at) as created_at, strftime(\'%Y-%m-%dT%H:%M\', t.updated_at) as updated_at ' +
                 'FROM article as t ' +
                 'WHERE t.is_public = ? ' +
                 'ORDER BY t.created_at DESC ' +
@@ -76,7 +76,7 @@ export class K586Articles extends WorkerEntrypoint<Env> {
 
     async getArticlesTitle () {
         const query =
-            'SELECT t.id, t.title, t.user_id, date(datetime(t.created_at)) as created_at ' +
+            'SELECT t.id, t.title, t.user_id, strftime(\'%Y-%m-%dT%H:%M\', t.created_at) as created_at ' +
             'FROM article as t ' +
             'WHERE t.is_public = ? ' +
             'ORDER BY t.created_at DESC ' +
@@ -90,7 +90,7 @@ export class K586Articles extends WorkerEntrypoint<Env> {
 
     async getArticleEditMode (articleId: string) {
         const query =
-            'SELECT t.id, t.title, t.content_md, t.user_id, t.created_at ' +
+            'SELECT t.id, t.title, t.content_md, t.user_id ' +
             'FROM article as t ' +
             'WHERE t.id = ?'; // 今のところ個人用なので is_public は見ない
         const stmt = this.env.DB.prepare(query);
