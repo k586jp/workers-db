@@ -58,7 +58,7 @@ export class K586Articles extends WorkerEntrypoint<Env> {
         }
         const convert = await Promise.all(convertPromises);
         const convertCount = convertNumber.length;
-        // let stmtArray: D1PreparedStatement[] = [];
+        let stmtArray: D1PreparedStatement[] = [];
         for (let j = 0; j < convertCount; j++) {
             const i = convertNumber[j];
             articles[i].content_html = convert[j];
@@ -66,11 +66,11 @@ export class K586Articles extends WorkerEntrypoint<Env> {
                 'UPDATE article ' +
                 'SET content_html = ? ' +
                 'WHERE id = ?';
-            // stmtArray.push(this.env.DB.prepare(query).bind(articles[i].content_html, articles[i].id));
+            stmtArray.push(this.env.DB.prepare(query).bind(articles[i].content_html, articles[i].id));
         }
-        // if (stmtArray.length > 0) {
-        //     await this.env.DB.batch(stmtArray);
-        // }
+        if (stmtArray.length > 0) {
+            await this.env.DB.batch(stmtArray);
+        }
         return articles;
     }
 
@@ -98,9 +98,10 @@ export class K586Articles extends WorkerEntrypoint<Env> {
     }
 
     async updateArticle (article: Article) {
+        article.content_html = null;
         const query =
             'UPDATE article ' +
-            'SET title = ?, content_md = ? ' +
+            'SET title = ?, content_md = ?, content_html = ? ' +
             'WHERE id = ?';
         const stmt = this.env.DB.prepare(query);
         let retry = 0;
@@ -110,7 +111,25 @@ export class K586Articles extends WorkerEntrypoint<Env> {
                 throw new Error('記事の保存に失敗しました。');
             }
             await sleep(5 * retry);
-            result = await stmt.bind(article.title, article.content_md, article.id).run();
+            result = await stmt.bind(article.title, article.content_md, article.content_html, article.id).run();
+            retry++;
+        }
+    }
+
+    async insertArticle (article: Article) {
+        const query =
+            'INSERT INTO article ' +
+            '(id, is_public, title, content_md, user_id) ' +
+            'VALUES (?, ?, ?, ?, ?)';
+        const stmt = this.env.DB.prepare(query);
+        let retry = 0;
+        let result: D1Result<Record<string, unknown>> = null;
+        while (result === null || !result.success) {
+            if (retry > 5) {
+                throw new Error('記事の保存に失敗しました。');
+            }
+            await sleep(5 * retry);
+            result = await stmt.bind(article.id, true, article.title, article.content_md, 'k586').run();
             retry++;
         }
     }
@@ -131,46 +150,6 @@ function sleep(seconds: number): Promise<void> {
         }
     );
 }
-
-// class Md2html {
-//
-//     private readonly articles: Article[];
-//
-//     constructor (articles: Article[]) {
-//         this.articles = articles;
-//     }
-//
-//     get() {
-//         return this.articles;
-//     }
-//
-//     async saveArticle(env: Env) {
-//         const count = this.articles.length;
-//         if (count === 1) {
-//             const query =
-//                 'INSERT INTO article (id, title, content_md, content_html, user_id)' +
-//                 'VALUES (?, ?, ?, ?, ?)' +
-//                 'ON CONFLICT(id) DO' +
-//                 'UPDATE SET title = ?, content_md = ?, content_html = ?, updated_at = (DATETIME(\'now\'))';
-//             const stmt = env.DB.prepare(query);
-//             this.articles[0].content_html = await env.MD2HTML.convert(this.articles[0].content_md);
-//             let retry = 0;
-//             let result: D1Result<Record<string, unknown>> = null;
-//             while (result === null || !result.success) {
-//                 if (retry > 5) {
-//                     throw new Error('記事の保存に失敗しました。');
-//                 }
-//                 await sleep(5 * retry);
-//                 result = await stmt.bind(
-//                     this.articles[0].id, this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html, this.articles[0].user_id,
-//                     this.articles[0].title, this.articles[0].content_md, this.articles[0].content_html
-//                 ).run();
-//                 retry++;
-//             }
-//         }
-//     }
-//
-// }
 
 
 // export class K586ArticleId extends WorkerEntrypoint<Env> {
